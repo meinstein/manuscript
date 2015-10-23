@@ -1,0 +1,266 @@
+<!DOCTYPE html> 
+<html lang="en">
+	<head>
+		<title>bars / Tween.js</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+		<link href='https://fonts.googleapis.com/css?family=Source+Code+Pro' rel='stylesheet' type='text/css'>
+
+		<link rel="stylesheet" href="css/normalize.css">
+		<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css">
+		<link rel="stylesheet" href="css/styles.css">
+
+	</head>
+	<body>
+
+		<div class='header'> In Contigency: Reality, Symbol and Relation</div>
+		<progress class="shadow" value="0"></progress>
+
+		<div class="bottomButton">
+		<i class="fa fa-angle-double-down fa-3x"></i>
+		</div>
+
+    	<script src="libs/tween.min.js"></script>
+		<script src="libs/RequestAnimationFrame.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+		<script src="table.js"></script>
+
+		<script>
+
+			var max = 88; // longest wordcount for one row
+			var min = 1;
+
+			var scrolled = 0;
+
+			var colors = d3.scale.linear()
+			.domain([min, max])
+			.range(['#336699', '#E74C3C']);
+
+			var circleSize = d3.scale.linear()
+			.domain([min, max])
+			.range(['10', '75']);
+
+			var rectLength = d3.scale.linear()
+			.domain([min, max])
+			.range(['30', '200']);
+
+			init();
+			animate();
+
+			function init() {
+
+				var rowContainer = document.createElement( 'div' );
+			    rowContainer.className = 'rowContainer';
+			    document.body.appendChild(rowContainer);
+
+				var pad = document.createElement( 'div' );
+			    pad.className = 'pad';
+			    document.body.appendChild(pad);
+
+				for(var i = 0; i < table.length; i+=3) {
+
+					var textFromRow = table[ i+2];
+					//console.log(textFromRow);
+					var wordCount = textFromRow.split(" ").length;
+
+					var pad = $('.pad');
+					var rowContainer = $('.rowContainer');
+
+					var startValue = 2000 + (Math.random() - Math.random()) * 500;
+					// var endValue = 500 + (Math.random() - Math.random()) * 250;
+					var endValue = 0;
+					var midValue = 200 - Math.random() * 200;
+					//var endValue = 175 + Math.random() * 20;
+
+				    var row = document.createElement( 'div' );
+				   	row.id = table[ i+1 ];
+			        row.className = 'row';
+			        rowContainer.append( row );
+
+			        var num = document.createElement( 'div' );
+			        num.className = 'num';
+			        num.innerText = table[ i+1 ] + ". ";
+			        num.style.backgroundColor = colors(wordCount);
+			        num.style.display = 'none';
+			        row.appendChild( num );
+
+			        var text = document.createElement( 'div' );
+			        text.className = "text";
+			        text.style.backgroundColor = colors(wordCount);
+			        text.style.width = rectLength(wordCount) + 'px';
+			        row.appendChild( text );
+
+			        var actualText = document.createElement( 'p' );
+			        actualText.className = "actualText";
+			        actualText.innerText = textFromRow;
+			        actualText.style.display = 'none';
+			        text.appendChild( actualText );
+
+		   			var circle = document.createElement( 'div' );
+			        circle.className = 'circle';
+			        circle.id = "circle" + table[ i+1 ];
+			        circle.style.backgroundColor = colors(wordCount);
+			        circle.style.width = circleSize(wordCount) + "px";
+			        circle.style.height = circleSize(wordCount) + "px";
+			        pad.append( circle );
+
+					var elem = { x: startValue, rect: row, cir: circle  };
+
+					var updateCallback = function() {
+						this.rect.style.right = this.x + 'px';
+						this.cir.style.top = this.x + 'px';
+					}
+
+					var tween = new TWEEN.Tween(elem)
+						.to({ x: endValue }, 1000)
+						.onUpdate(updateCallback)
+						.easing(TWEEN.Easing.Quadratic.InOut)
+						.start();
+
+					// var tweenBack = new TWEEN.Tween(elem, false)
+					// 	.to({ x: midValue}, 4000)
+					// 	.delay(Math.random() * 2000)
+					// 	.onUpdate(updateCallback)
+					// 	.easing(TWEEN.Easing.Elastic.InOut);
+
+					// tween.chain(tweenBack);
+					// tweenBack.chain(tween);
+				}
+
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+				TWEEN.update();
+
+			}
+
+		    $(window).on("resize",function() {
+
+		        var bodyheight = $(document).height();
+		        $(".pad").height(bodyheight);
+		    });
+
+		    $('.row').hover(function() { 
+
+		    	// changes on ROWs
+
+		    	$(this).find('.actualText').toggle();
+		        $(this).find('.num').toggle();
+
+		        // changes on CIRCLES
+
+		    	var thisId = $(this).attr('id');
+		    	var circleId = "circle" + thisId;
+
+		    	var thisCir = $('#'+circleId).toggleClass( "circleHover" );
+
+
+		    	var rowText = $(this).find('.actualText').text();
+
+		    	var cirPosTop = $('#'+circleId).position().top;
+		    	var cirPosLeft = $('#'+circleId).position().left;
+
+		    	generateWordDiv(rowText, cirPosLeft, cirPosTop);
+				
+			})
+
+		    function generateWordDiv(rowText, cirPosLeft, cirPosTop){
+
+		    	var textSplit = rowText.split(" ");
+
+		    	for ( var i = 0; i < textSplit.length; i ++ ) {
+
+		    	var startOpacity = .1;
+	    		var tempText = document.createElement( 'div' );
+		        tempText.className = 'tempText';
+		        tempText.innerText = textSplit[ i ];
+		        tempText.style.opacity = 0;
+		        tempText.style.top = cirPosTop + "px";
+		        tempText.style.left = cirPosLeft + "px";
+		        // tempText.style.transform = "rotate(90deg)";
+		        $('.pad').append( tempText );
+
+		        tweenText(cirPosTop, cirPosLeft, tempText, startOpacity);
+
+		    	}
+
+		    };
+
+		    function tweenText(cirPosTop, cirPosLeft, tempText, startOpacity){
+
+
+		    		var pos = { top: cirPosTop, left: cirPosLeft, tempText: tempText, opacity: startOpacity  };
+
+		    		var endValue = 2200;
+		    		var endOpacity = 1;
+
+		    		var updateCallback = function() {
+						this.tempText.style.top = this.top + 'px';
+						this.tempText.style.opacity = this.opacity;
+						// this.tempText.style.transform = "rotate("+this.top*Math.random()+"deg)";
+					}
+
+					var removeObject = function() {
+						this.tempText.remove();
+					}
+
+					var tween = new TWEEN.Tween(pos)
+						.to({ top: endValue, opacity: endOpacity }, Math.random()*3500)
+						.delay(Math.random() * 250)
+						.onUpdate(updateCallback)
+						.easing(TWEEN.Easing.Quadratic.InOut)
+						.onComplete(removeObject)
+						.start();
+
+		    }
+
+		   	$('.circle').hover(function() {
+
+			   	var thisId = $(this).attr('id');
+			   	var rectId = thisId.substring(6);
+			   	var thisRect = $('#'+rectId).find(".num, .actualText").toggle();
+
+			   //	scrollTo(rectId)
+
+		   	})
+
+		   	$('.bottomButton').click(function(){
+
+		   		var scrollSpeed = 250;
+		   		scrolled=scrolled + 50
+
+		   		$('html, body').animate({scrollTop: scrolled}, scrollSpeed);
+
+		   	})
+
+		    function addPop() {     
+			    $(".row").css("-webkit-transition", ".5s ease-in-out");
+			    $(".row").css("-moz-transition", ".5s ease-in-out");
+			    $(".row").css("transition", ".5s ease-in-out");
+			    $(".circle").css("transition", "all .25s ease-in-out")
+			 }
+
+			setTimeout(addPop, 1001)
+
+
+			 var winHeight = $(window).height(), 
+			     docHeight = $(document).height(),
+			     progressBar = $('progress'),
+			     max, value;
+
+			  /* Set the max scrollable area */
+			  max = docHeight - winHeight;
+			  progressBar.attr('max', max);
+
+			  $(document).on('scroll', function(){
+			     value = $(window).scrollTop();
+			     progressBar.attr('value', value);
+			  });
+
+		</script>
+
+	</body>
+</html>
