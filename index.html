@@ -20,7 +20,7 @@
 		<i class="fa fa-angle-double-down fa-3x"></i>
 		</div>
 
-    	<script src="libs/tween.min.js"></script>
+		<script src="libs/tween.min.js"></script>
 		<script src="libs/RequestAnimationFrame.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0-alpha1/jquery.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
@@ -28,28 +28,49 @@
 
 		<script>
 
-			var max = 88; // longest wordcount for one row
+			// Remember - These are all global variables ;)
 			var min = 1;
-
+			var max; // We set this inside init()
+			var colors; // Ditto - because setting this requires us to know `max`
+			var circleSize; // Ditto
+			var rectLength; // Ditto
 			var scrolled = 0;
 
-			var colors = d3.scale.linear()
-			.domain([min, max])
-			.range(['#336699', '#E74C3C']);
-
-			var circleSize = d3.scale.linear()
-			.domain([min, max])
-			.range(['10', '75']);
-
-			var rectLength = d3.scale.linear()
-			.domain([min, max])
-			.range(['30', '200']);
+			// I like to redefine shortcuts to really common vars to avoid lookup every time they get used
+			// I didn't update the code with these new vars but you can if you want, or delete them :)
+			$win = $(window);
+			$doc = $(document);
+			$body = $(document.body);
 
 			init();
 			animate();
 
 			function init() {
 
+				// Set max value based on the longest phrase inside the table array
+				max = 0; // This turns it from undefined into a number
+				for (var i = table.length - 1; i >= 0; i--) {
+					var entry = table[i];
+					if(typeof entry == "string"){
+						var wordcount = entry.split(' ').length;
+						if(wordcount > max) max = wordcount;
+					}
+				};
+
+				colors = d3.scale.linear()
+				.domain([min, max])
+				.range(['#336699', '#E74C3C']);
+
+				circleSize = d3.scale.linear()
+				.domain([min, max])
+				.range(['10', '75']);
+
+				rectLength = d3.scale.linear()
+				.domain([min, max])
+				.range(['30', '200']);
+
+				// Since you define rowContainer and pad here OUTSIDE the for-loop,
+				// no need to keep redefining the jQuery versions i.e. $('.rowContainer') INSIDE the for-loop
 				var rowContainer = document.createElement( 'div' );
 			    rowContainer.className = 'rowContainer';
 			    document.body.appendChild(rowContainer);
@@ -58,14 +79,19 @@
 			    pad.className = 'pad';
 			    document.body.appendChild(pad);
 
+			  // you don't need to use var since you already defined them
+			  // you can also just pass the plain dom versions into $() and bypass using a string selector
+				// Since you never use the plain DOM versions, you could also construct them with jQuery
+				// i.e. pad = $('<div>'); pad.addClass('pad').appendTo($('body'));
+				pad = $(pad);
+				rowContainer = $(rowContainer);
+
 				for(var i = 0; i < table.length; i+=3) {
 
 					var textFromRow = table[ i+2];
 					//console.log(textFromRow);
 					var wordCount = textFromRow.split(" ").length;
 
-					var pad = $('.pad');
-					var rowContainer = $('.rowContainer');
 
 					var startValue = 2000 + (Math.random() - Math.random()) * 500;
 					// var endValue = 500 + (Math.random() - Math.random()) * 250;
@@ -128,7 +154,7 @@
 					// tweenBack.chain(tween);
 				}
 
-			}
+			} // end init
 
 			function animate() {
 
@@ -137,119 +163,129 @@
 
 			}
 
-		    $(window).on("resize",function() {
+	    $(window).on("resize",function() {
 
-		        var bodyheight = $(document).height();
-		        $(".pad").height(bodyheight);
-		    });
+	        var bodyheight = $(document).height();
+	        $(".pad").height(bodyheight);
+	    });
 
-		    $('.row').hover(function() { 
+	    $('.row').hover(function() {
 
-		    	// changes on ROWs
+	    	// Cache this variable
+	    	var $row = $(this);
 
-		    	$(this).find('.actualText').toggle();
-		        $(this).find('.num').toggle();
+	    	// changes on ROWs
+	    	$row.find('.actualText').toggle();
+        $row.find('.num').toggle();
 
-		        // changes on CIRCLES
+        // changes on CIRCLES
+        var $circle = $('#circle' + $(this).attr('id') );
+	    	// var thisId = $(this).attr('id');
+	    	// var circleId = "circle" + thisId;
 
-		    	var thisId = $(this).attr('id');
-		    	var circleId = "circle" + thisId;
+	    	// var thisCir = $('#'+circleId).toggleClass( "circleHover" );
+	    	$circle.toggleClass("circleHover");
 
-		    	var thisCir = $('#'+circleId).toggleClass( "circleHover" );
+	    	//var rowText = $(this).find('.actualText').text();
+	    	var rowText = $row.find('.actualText').text();
 
+	    	// var cirPosTop = $('#'+circleId).position().top;
+	    	// var cirPosLeft = $('#'+circleId).position().left;
+	    	var circPosition = $circle.position();
 
-		    	var rowText = $(this).find('.actualText').text();
-
-		    	var cirPosTop = $('#'+circleId).position().top;
-		    	var cirPosLeft = $('#'+circleId).position().left;
-
-		    	generateWordDiv(rowText, cirPosLeft, cirPosTop);
-				
+	    	generateWordDiv(rowText, circPosition.left, circPosition.top);
+			
 			})
 
-		    function generateWordDiv(rowText, cirPosLeft, cirPosTop){
+	    function generateWordDiv(rowText, cirPosLeft, cirPosTop){
 
-		    	var textSplit = rowText.split(" ");
+	    	var textSplit = rowText.split(" ");
 
-		    	for ( var i = 0; i < textSplit.length; i ++ ) {
+	    	for ( var i = 0; i < textSplit.length; i ++ ) {
 
-		    	var startOpacity = .1;
-	    		var tempText = document.createElement( 'div' );
-		        tempText.className = 'tempText';
-		        tempText.innerText = textSplit[ i ];
-		        tempText.style.opacity = 0;
-		        tempText.style.top = cirPosTop + "px";
-		        tempText.style.left = cirPosLeft + "px";
-		        // tempText.style.transform = "rotate(90deg)";
-		        $('.pad').append( tempText );
+	    	var startOpacity = .1;
+    		var tempText = document.createElement( 'div' );
+	        tempText.className = 'tempText';
+	        tempText.innerText = textSplit[ i ];
+	        tempText.style.opacity = 0;
+	        tempText.style.top = cirPosTop + "px";
+	        tempText.style.left = cirPosLeft + "px";
+	        // tempText.style.transform = "rotate(90deg)";
+	        $('.pad').append( tempText );
 
-		        tweenText(cirPosTop, cirPosLeft, tempText, startOpacity);
+	        tweenText(cirPosTop, cirPosLeft, tempText, startOpacity);
 
-		    	}
+	    	}
 
-		    };
+	    };
 
-		    function tweenText(cirPosTop, cirPosLeft, tempText, startOpacity){
-
-
-		    		var pos = { top: cirPosTop, left: cirPosLeft, tempText: tempText, opacity: startOpacity  };
-
-		    		var endValue = 2200;
-		    		var endOpacity = 1;
-
-		    		var updateCallback = function() {
-						this.tempText.style.top = this.top + 'px';
-						this.tempText.style.opacity = this.opacity;
-						// this.tempText.style.transform = "rotate("+this.top*Math.random()+"deg)";
-					}
-
-					var removeObject = function() {
-						this.tempText.remove();
-					}
-
-					var tween = new TWEEN.Tween(pos)
-						.to({ top: endValue, opacity: endOpacity }, Math.random()*3500)
-						.delay(Math.random() * 250)
-						.onUpdate(updateCallback)
-						.easing(TWEEN.Easing.Quadratic.InOut)
-						.onComplete(removeObject)
-						.start();
-
-		    }
-
-		   	$('.circle').hover(function() {
-
-			   	var thisId = $(this).attr('id');
-			   	var rectId = thisId.substring(6);
-			   	var thisRect = $('#'+rectId).find(".num, .actualText").toggle();
-
-			   //	scrollTo(rectId)
-
-		   	})
-
-		   	$('.bottomButton').click(function(){
-
-		   		var scrollSpeed = 250;
-		   		scrolled=scrolled + 50
-
-		   		$('html, body').animate({scrollTop: scrolled}, scrollSpeed);
-
-		   	})
-
-		    function addPop() {     
-			    $(".row").css("-webkit-transition", ".5s ease-in-out");
-			    $(".row").css("-moz-transition", ".5s ease-in-out");
-			    $(".row").css("transition", ".5s ease-in-out");
-			    $(".circle").css("transition", "all .25s ease-in-out")
-			 }
-
-			setTimeout(addPop, 1001)
+	    function tweenText(cirPosTop, cirPosLeft, tempText, startOpacity){
 
 
-			 var winHeight = $(window).height(), 
-			     docHeight = $(document).height(),
-			     progressBar = $('progress'),
-			     max, value;
+	    		var pos = { top: cirPosTop, left: cirPosLeft, tempText: tempText, opacity: startOpacity  };
+
+	    		var endValue = 2200;
+	    		var endOpacity = 1;
+
+	    		var updateCallback = function() {
+					this.tempText.style.top = this.top + 'px';
+					this.tempText.style.opacity = this.opacity;
+					// this.tempText.style.transform = "rotate("+this.top*Math.random()+"deg)";
+				}
+
+				var removeObject = function() {
+					this.tempText.remove();
+				}
+
+				var tween = new TWEEN.Tween(pos)
+					.to({ top: endValue, opacity: endOpacity }, Math.random()*3500)
+					.delay(Math.random() * 250)
+					.onUpdate(updateCallback)
+					.easing(TWEEN.Easing.Quadratic.InOut)
+					.onComplete(removeObject)
+					.start();
+
+	    }
+
+	   	$('.circle').hover(function() {
+
+		   	var thisId = $(this).attr('id');
+		   	var rectId = thisId.substring(6);
+		   	var thisRect = $('#'+rectId).find(".num, .actualText").toggle();
+
+		   //	scrollTo(rectId)
+
+	   	})
+
+	   	$('.bottomButton').click(function(){
+
+	   		var scrollSpeed = 250;
+	   		scrolled=scrolled + 50
+
+	   		$('html, body').animate({scrollTop: scrolled}, scrollSpeed);
+
+	   	})
+
+	    function addPop() {     
+		    // $(".row").css("-webkit-transition", ".5s ease-in-out");
+		    // $(".row").css("-webkit-transition", ".5s ease-in-out"); DID YOU MEAN -moz?
+		    // $(".row").css("transition", ".5s ease-in-out");
+		    var trans = ".5s ease-in-out";
+		    $('.row').css({
+					"-webkit-transition" : trans,
+						 "-moz-transition" : trans,
+									"transition" : trans,
+		    });
+		    $(".circle").css("transition", "all .25s ease-in-out")
+		 	}
+
+			setTimeout(addPop, 1001); // What is the setTimeout for?
+
+			var winHeight = $(window).height(), 
+			    docHeight = $(document).height(),
+			    progressBar = $('progress'),
+			    max, // You need to change this variable name.  Since most of your variables are global, the max down here is the same as the max at the very top.  Since we only use that variable one during init it's not causing any problems, but it's better to put your variables in 'scope' so that they don't clash
+			    value;
 
 			  /* Set the max scrollable area */
 			  max = docHeight - winHeight;
